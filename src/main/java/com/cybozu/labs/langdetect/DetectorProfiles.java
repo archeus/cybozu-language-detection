@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.cybozu.labs.langdetect.util.LangProfile;
 
@@ -18,7 +19,7 @@ import com.cybozu.labs.langdetect.util.LangProfile;
  *
  */
 public class DetectorProfiles {
-    /* package scope */ HashMap<String, double[]> wordLangProbMap;
+    /* package scope */ Map<String, double[]> wordLangProbMap;
     /* package scope */ ArrayList<String> langlist;
     /* package scope */ Long seed = null;
 

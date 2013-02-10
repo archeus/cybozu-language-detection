@@ -151,10 +151,32 @@ public class DetectorFactory {
      * @return Detector instance
      * @throws LangDetectException 
      */
+    static public Detector create(boolean stripUrls, boolean stripEmail, boolean normalizeVi) throws LangDetectException {
+        return create(instance_.profiles, stripUrls, stripEmail, normalizeVi);
+    }    
+    /**
+     * Construct Detector instance
+     * 
+     * @return Detector instance
+     * @throws LangDetectException 
+     */
     static public Detector create(DetectorProfiles profiles) throws LangDetectException {
         if (profiles.langlist.size()==0)
             throw new LangDetectException(ErrorCode.NeedLoadProfileError, "need to load profiles");
         Detector detector = new Detector(profiles);
+        return detector;
+    }
+    
+    /**
+     * Construct Detector instance
+     * 
+     * @return Detector instance
+     * @throws LangDetectException 
+     */
+    static public Detector create(DetectorProfiles profiles, boolean stripUrls, boolean stripEmail, boolean normalizeVi) throws LangDetectException {
+        if (profiles.langlist.size()==0)
+            throw new LangDetectException(ErrorCode.NeedLoadProfileError, "need to load profiles");
+        Detector detector = new Detector(profiles, stripUrls, stripEmail, normalizeVi);
         return detector;
     }
 

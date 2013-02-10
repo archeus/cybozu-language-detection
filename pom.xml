@@ -4,7 +4,7 @@
 
   <groupId>com.cybozu.labs</groupId>
   <artifactId>langdetect</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0-SNAPSHOT-archeus</version>
   <packaging>jar</packaging>
 
   <name>language-detection-lib</name>

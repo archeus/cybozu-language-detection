@@ -6,6 +6,7 @@ import java.lang.Character.UnicodeBlock;
 import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.regex.Pattern;
 
@@ -66,10 +67,10 @@ public class Detector {
     private static final Pattern URL_REGEX = Pattern.compile("https?://[-_.?&~;+=/#0-9A-Za-z]{1,2076}");
     private static final Pattern MAIL_REGEX = Pattern.compile("[-_.0-9A-Za-z]{1,64}@[-_0-9A-Za-z]{1,255}[-_.0-9A-Za-z]{1,255}");
     
-    private final HashMap<String, double[]> wordLangProbMap;
+    private final Map<String, double[]> wordLangProbMap;
     private final ArrayList<String> langlist;
 
-    private StringBuffer text;
+    private StringBuilder text;
     private double[] langprob = null;
 
     private double alpha = ALPHA_DEFAULT;
@@ -78,6 +79,9 @@ public class Detector {
     private double[] priorMap = null;
     private boolean verbose = false;
     private Long seed = null;
+    private boolean stripUrls = true;
+    private boolean stripEmail = true;
+    private boolean normalizeVi = true;
 
     /**
      * Constructor.
@@ -87,8 +91,20 @@ public class Detector {
     public Detector(DetectorProfiles profiles) {
         this.wordLangProbMap = profiles.wordLangProbMap;
         this.langlist = profiles.langlist;
-        this.text = new StringBuffer();
+        this.text = new StringBuilder();
         this.seed  = profiles.seed;
+    }
+    
+    /**
+     * Constructor.
+     * Detector instance can be constructed via {@link DetectorFactory#create()}.
+     * @param profiles {@link DetectorFactory} instance (only DetectorFactory inside)
+     */
+    public Detector(DetectorProfiles profiles, boolean stripUrls, boolean stripEmail, boolean normalizeVi) {
+        this(profiles);
+        this.stripUrls = stripUrls;
+        this.stripEmail = stripEmail;
+        this.normalizeVi = normalizeVi;
     }
 
     /**
@@ -163,9 +179,15 @@ public class Detector {
      * @param text the target text to append
      */
     public void append(String text) {
-        text = URL_REGEX.matcher(text).replaceAll(" ");
-        text = MAIL_REGEX.matcher(text).replaceAll(" ");
-        text = NGram.normalize_vi(text);
+        if (stripUrls) {
+            text = URL_REGEX.matcher(text).replaceAll(" ");
+        }
+        if (stripEmail) {
+            text = MAIL_REGEX.matcher(text).replaceAll(" ");
+        }
+        if (normalizeVi) {
+            text = NGram.normalize_vi(text);
+        }
         char pre = 0;
         for (int i = 0; i < text.length() && i < max_text_length; ++i) {
             char c = text.charAt(i);
@@ -189,7 +211,7 @@ public class Detector {
             }
         }
         if (latinCount * 2 < nonLatinCount) {
-            StringBuffer textWithoutLatin = new StringBuffer();
+            StringBuilder textWithoutLatin = new StringBuilder();
             for(int i = 0; i < text.length(); ++i) {
                 char c = text.charAt(i);
                 if (c > 'z' || c < 'A') textWithoutLatin.append(c);
@@ -275,13 +297,17 @@ public class Detector {
      * @return n-grams list
      */
     private ArrayList<String> extractNGrams() {
-        ArrayList<String> list = new ArrayList<String>();
-        NGram ngram = new NGram();
-        for(int i=0;i<text.length();++i) {
-            ngram.addChar(text.charAt(i));
-            for(int n=1;n<=NGram.N_GRAM;++n){
-                String w = ngram.get(n);
-                if (w!=null && wordLangProbMap.containsKey(w)) list.add(w);
+        ArrayList<String> list = new ArrayList<String>(text.length() * NGram.N_GRAM);
+//        ArrayList<String> list = new ArrayList<String>();
+        final Map<String, double[]> map = wordLangProbMap;
+        final NGram ngram = new NGram();
+        final int len = text.length();
+        for(int i=0;i<len;++i) {
+            if (ngram.addChar(text.charAt(i)) ) {
+                for(int n=1; n <= NGram.N_GRAM; ++n){
+                    final String w = ngram.get_(n);
+                    if (w!=null && map.containsKey(w)) list.add(w);
+                }
             }
         }
         return list;

@@ -15,14 +15,14 @@ public class NGram {
     public final static int N_GRAM = 3;
     public static HashMap<Character, Character> cjk_map; 
     
-    private StringBuffer grams_;
+    private StringBuilder grams_;
     private boolean capitalword_;
 
     /**
      * Constructor.
      */
     public NGram() {
-        grams_ = new StringBuffer(" ");
+        grams_ = new StringBuilder(" ");
         capitalword_ = false;
     }
 
@@ -30,23 +30,27 @@ public class NGram {
      * Append a character into ngram buffer.
      * @param ch
      */
-    public void addChar(char ch) {
+    public boolean addChar(char ch) {
         ch = normalize(ch);
         char lastchar = grams_.charAt(grams_.length() - 1);
         if (lastchar == ' ') {
-            grams_ = new StringBuffer(" ");
+            if (grams_.length() > 1) {
+                grams_.setLength(0);
+                grams_.append(' ');
+            }
             capitalword_ = false;
-            if (ch==' ') return;
+            if (ch==' ') return !capitalword_;
         } else if (grams_.length() >= N_GRAM) {
             grams_.deleteCharAt(0);
         }
         grams_.append(ch);
 
-        if (Character.isUpperCase(ch)){
-            if (Character.isUpperCase(lastchar)) capitalword_ = true;
+        if (cUppercaseChars[ch]){
+            if (cUppercaseChars[lastchar]) capitalword_ = true;
         } else {
             capitalword_ = false;
         }
+        return !capitalword_;
     }
 
     /**
@@ -57,11 +61,30 @@ public class NGram {
     public String get(int n) {
         if (capitalword_) return null;
         int len = grams_.length(); 
-        if (n < 1 || n > 3 || len < n) return null;
         if (n == 1) {
             char ch = grams_.charAt(len - 1);
             if (ch == ' ') return null;
             return Character.toString(ch);
+        } else if (n < 1 || n > N_GRAM || len < n) {
+            return null;
+        } else {
+            return grams_.substring(len - n, len);
+        }
+    }
+    
+    /**
+     * Get n-Gram
+     * @param n length of n-gram
+     * @return n-Gram String (null if it is invalid)
+     */
+    public String get_(int n) {
+        int len = grams_.length(); 
+        if (n == 1) {
+            char ch = grams_.charAt(len - 1);
+            if (ch == ' ') return null;
+            return Character.toString(ch);
+        } else if (len < n) {
+            return null;
         } else {
             return grams_.substring(len - n, len);
         }
@@ -72,7 +95,7 @@ public class NGram {
      * @param ch
      * @return Normalized character
      */
-    static public char normalize(char ch) {
+    static private char _normalize(char ch) {
         Character.UnicodeBlock block = Character.UnicodeBlock.of(ch);
         if (block == UnicodeBlock.BASIC_LATIN) {
             if (ch<'A' || (ch<'a' && ch >'Z') || ch>'z') ch = ' ';
@@ -274,4 +297,25 @@ public class NGram {
         }
     }
 
+    static public char normalize(char ch) {
+        return cCorrectDiacritics[ch];
+    }
+    
+    private static boolean[] cUppercaseChars = null;
+    private static char[] cCorrectDiacritics = null;
+    static {
+        cCorrectDiacritics = new char[Character.MAX_VALUE - Character.MIN_VALUE];
+        char c = Character.MIN_VALUE;
+        for (int i = 0; i < Character.MAX_VALUE - Character.MIN_VALUE; i++) {
+            char newC = _normalize(c);
+            cCorrectDiacritics[i] = newC;
+            c++;
+        }
+        cUppercaseChars = new boolean[Character.MAX_VALUE - Character.MIN_VALUE];
+        c = Character.MIN_VALUE;
+        for (int i = 0; i < Character.MAX_VALUE - Character.MIN_VALUE; i++) {
+            cUppercaseChars[i] = Character.isUpperCase(c);
+            c++;
+        }
+    }
 }
